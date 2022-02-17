@@ -4,14 +4,44 @@
 # https://docs.scrapy.org/en/latest/topics/items.html
 
 import scrapy
+from itemloaders.processors import MapCompose, TakeFirst
 
 
-class JobparserItem(scrapy.Item):
+def clean_data(value):
+    value = value.strip().replace('\xa0', '')
+    return value
+
+
+def to_float_price(value):
+    try:
+        value = float(value)
+    except ValueError:
+        pass
+    return value
+
+
+def to_format(value):
+    if value.isdigit():
+        return int(value)
+    else:
+        try:
+            return float(value)
+        except ValueError:
+            if ', ' in value:
+                return [value.split(', ')]
+            else:
+                return value
+
+
+class LeruaScraperItem(scrapy.Item):
     # define the fields for your item here like:
-    name = scrapy.Field()
-    salary = scrapy.Field()
-    url = scrapy.Field()
-    min_salary = scrapy.Field()
-    max_salary = scrapy.Field()
-    currency = scrapy.Field()
-    _id = scrapy.Field()           # Добавлем это поле в items, потому что мы будем складывать item-ы в базу данных Mongo, и она попытается добавить id , а это поле у нас в items отсутствует и возникнет конфликт
+    url = scrapy.Field(output_processor=TakeFirst())
+    _id = scrapy.Field(output_processor=TakeFirst())
+    name = scrapy.Field(input_processor=MapCompose(clean_data),
+                        output_processor=TakeFirst())
+    price = scrapy.Field(input_processor=MapCompose(clean_data, to_float_price),
+                         output_processor=TakeFirst())
+    photos = scrapy.Field()
+    chars_key = scrapy.Field()
+    chars_value = scrapy.Field(input_processor=MapCompose(clean_data, to_format))
+    characteristics = scrapy.Field()

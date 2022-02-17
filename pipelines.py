@@ -6,57 +6,52 @@
 
 # useful for handling different item types with a single interface
 from itemadapter import ItemAdapter
+
+
+from itemadapter import ItemAdapter
+import scrapy
+from scrapy.pipelines.images import ImagesPipeline
 from pymongo import MongoClient
+from pymongo import errors
+# import hashlib
+# from scrapy.utils.python import to_bytes
 
-class JobparserPipeline:
-    def __init__(self):                                                              # Создадим конструктор класса и пропишем там соединение с базой данных, чтобы обратиться к ней единожды, а не обращаться каждый раз заново
-        client = MongoClient('127.0.0.1', 27017)
-        client.drop_database('vacancies1402')
-        self.mongobase = client.vacancies1402
 
-    def process_hhru_salary(dirty_salary):      # Обработка зарплаты c hh.ru
-        if dirty_salary[0] == 'от ':
-            min_salary = dirty_salary[1]
-        if dirty_salary[0] == 'до ':
-            min_salary = None
-            max_salary = dirty_salary[1]
-        if 'от ' in dirty_salary and 'до ' not in dirty_salary:
-            min_salary = dirty_salary[1]
-            max_salary = None
-        if ' до ' in dirty_salary:
-            max_salary = dirty_salary[3]
-        if dirty_salary[0] == 'з/п не указана':
-            min_salary = None
-            max_salary = None
-            currency = None
-        if 'руб.' in dirty_salary:
-            currency = 'руб.'
-        elif 'USD' in dirty_salary:
-            currency = 'USD'
-        return min_salary, max_salary, currency
+class LeruaScraperPipeline:
 
-    def process_sjru_salary(dirty_salary):       # Обработка зарплаты c superjob.ru
-        min_salary, max_salary, currency = None, None, 'руб'
-        if dirty_salary[0] == 'от':
-            min_salary = int(''.join(filter(str.isdigit, dirty_salary[2].replace('\xa0', ''))))
-        elif dirty_salary[0] == 'до':
-            max_salary = int(''.join(filter(str.isdigit, dirty_salary[2].replace('\xa0', ''))))
-        elif len(dirty_salary) > 3:
-            min_salary = int(''.join(filter(str.isdigit, dirty_salary[0].replace('\xa0', ''))))
-            max_salary = int(''.join(filter(str.isdigit, dirty_salary[4].replace('\xa0', ''))))
-        else:
-            currency = None
-        return min_salary, max_salary, currency
-
+    def __init__(self):
+        client = MongoClient('localhost', 27017)
+        self.mongobase = client.leroy
 
     def process_item(self, item, spider):
-        if spider.name == 'hhru':
-            salary = self.process_hhru_salary(item.get('salary'))
-        else:
-            salary = self.process_sjru_salary(item.get('salary'))
-        item['min_salary'], item['min_salary'], item['currency'] = salary
-        del item['salary']                                                     # Удаляем промежуточную "грязную" зарплату (которая была до обработки)
-        collection = self.mongobase[spider.name]                               # Очень удобный подход, при котором item-ы сортируются в нужную коллекцию по имени паука, это нужно, когда пауков несколько и данные могут прилетать то от одного, то от другого паука
-        collection.insert_one(item)                                            # Добавляем обработанные данные в коллекцию
+        if len(item['chars_key']) == len(item['chars_value']):
+            item['characteristics'] = dict(zip(item['chars_key'], item['chars_value']))
+
+        del item['chars_key']
+        del item['chars_value']
+
+        collection = self.mongobase[spider.name]
+        try:
+            collection.insert_one(item)
+        except errors.DuplicateKeyError:
+            pass
         return item
 
+
+class LeroyImagesPipeline(ImagesPipeline):                # Создаем класс для обработки фото
+    def get_media_requests(self, item, info):
+        if item['photos']:
+            for img in item['photos']:
+                try:
+                    yield scrapy.Request(img)            # Скачать фото
+                except Exception as e:
+                    print(e)
+
+    def item_completed(self, results, item, info):
+        item['photos'] = [itm[1] for itm in results if itm[0]]               # Переписываем содержимое раздела фото, вместо ссылок на фото вставляем словари с более полной информацией
+        return item
+
+    def file_path(self, request, response=None, info=None, *, item=None):
+
+        fold = f"{item.get('_id')}/"
+        return fold + super().file_path(request, response=response, info=info, item=item)

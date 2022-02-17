@@ -1,4 +1,4 @@
-# Scrapy settings for jobparser project
+# Scrapy settings for lerua_scraper project
 #
 # For simplicity, this file contains only settings considered important or
 # commonly used. You can find more settings consulting the documentation:
@@ -7,34 +7,34 @@
 #     https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 #     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
-BOT_NAME = 'jobparser'
+BOT_NAME = 'lerua_scraper'
 
-SPIDER_MODULES = ['jobparser.spiders']
-NEWSPIDER_MODULE = 'jobparser.spiders'
+SPIDER_MODULES = ['lerua_scraper.spiders']
+NEWSPIDER_MODULE = 'lerua_scraper.spiders'
 
-LOG_ENABLED = True                                         # Логи нужны, чтобы записывать промежуточные результаты процесса и выводить все это в консоль во время выполнения кода
-LOG_LEVEL = "DEBUG"                                        # Уровень логов 'debug' это - максимально сохранять всю информацию о том, что происходит в процессе
-#LOG_FILE = 'Log.txt'                                     # В самом конце, когда проект отлажен нужно раскомментировать это указание, чтобы логи уже не просматривались при отладке в консоли, а записывались в отдельный файл
+
+LOG_ENABLED = True
+IMAGES_STORE = 'photos'
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
-USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.80 Safari/537.36'
+USER_AGENT = 'Mozilla/5.0 (Windows NT 6.2; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.81 Safari/537.36'
 
 # Obey robots.txt rules
 ROBOTSTXT_OBEY = False
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
-CONCURRENT_REQUESTS = 16                                                       # Но принято обычно начинать со скорости = 8 запросам/в единицу времени(сек)
+CONCURRENT_REQUESTS = 16
 
 # Configure a delay for requests for the same website (default: 0)
 # See https://docs.scrapy.org/en/latest/topics/settings.html#download-delay
 # See also autothrottle settings and docs
-DOWNLOAD_DELAY = 0.25                                                            # Задержка по времени после порции запросов
+DOWNLOAD_DELAY = 0.5
 # The download delay setting will honor only one of:
 #CONCURRENT_REQUESTS_PER_DOMAIN = 16
 #CONCURRENT_REQUESTS_PER_IP = 16
 
 # Disable cookies (enabled by default)
-COOKIES_ENABLED = True                                                         # Сохранять куки при запросе на сайт
+COOKIES_ENABLED = True
 
 # Disable Telnet Console (enabled by default)
 #TELNETCONSOLE_ENABLED = False
@@ -48,13 +48,13 @@ COOKIES_ENABLED = True                                                         #
 # Enable or disable spider middlewares
 # See https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 #SPIDER_MIDDLEWARES = {
-#    'jobparser.middlewares.JobparserSpiderMiddleware': 543,
+#    'leroymerlinparser.middlewares.LeroymerlinparserSpiderMiddleware': 543,
 #}
 
 # Enable or disable downloader middlewares
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 #DOWNLOADER_MIDDLEWARES = {
-#    'jobparser.middlewares.JobparserDownloaderMiddleware': 543,
+#    'leroymerlinparser.middlewares.LeroymerlinparserDownloaderMiddleware': 543,
 #}
 
 # Enable or disable extensions
@@ -66,14 +66,15 @@ COOKIES_ENABLED = True                                                         #
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    'jobparser.pipelines.JobparserPipeline': 300
-}                                                                         # указывает путь, по которому будут прилетать результаты парсинга (название,зарплата,url...), 300 - означает приоритет пайплайна (для того случая, когда их несколько)
+   'lerua_scraper.pipelines.LeruaScraperPipeline': 300,
+   'lerua_scraper.pipelines.LeroyImagesPipeline': 200          # Чем меньше число, тем выше приоритет (200 значит эта обработка произойдет раньше, чем 300)
+}
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html
 #AUTOTHROTTLE_ENABLED = True
 # The initial download delay
-#AUTOTHROTTLE_START_DELAY = 5
+# AUTOTHROTTLE_START_DELAY = 5
 # The maximum download delay to be set in case of high latencies
 #AUTOTHROTTLE_MAX_DELAY = 60
 # The average number of requests Scrapy should be sending in parallel to
